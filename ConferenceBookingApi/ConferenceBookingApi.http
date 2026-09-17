@@ -1,6 +1,14 @@
-@ConferenceBookingApi_HostAddress = http://localhost:5136
-
-GET {{ConferenceBookingApi_HostAddress}}/weatherforecast/
+### Отримати всі зали
+GET http://localhost:5136/api/Rooms
 Accept: application/json
 
-###
+### Створити новий зал
+POST http://localhost:5136/api/Rooms
+Content-Type: application/json
+
+{
+  "name": "Зал D",
+  "capacity": 40,
+  "basePricePerHour": 1000,
+  "services": []
+}

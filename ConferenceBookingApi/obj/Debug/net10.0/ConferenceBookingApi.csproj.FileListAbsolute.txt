@@ -31,3 +31,4 @@ C:\Users\vusat\Desktop\ConferenceBookingApi\ConferenceBookingApi\obj\Debug\net10
 C:\Users\vusat\Desktop\ConferenceBookingApi\ConferenceBookingApi\obj\Debug\net10.0\ConferenceBookingApi.pdb
 C:\Users\vusat\Desktop\ConferenceBookingApi\ConferenceBookingApi\obj\Debug\net10.0\ConferenceBookingApi.genruntimeconfig.cache
 C:\Users\vusat\Desktop\ConferenceBookingApi\ConferenceBookingApi\obj\Debug\net10.0\ref\ConferenceBookingApi.dll
+C:\Users\vusat\Desktop\ConferenceBookingApi\ConferenceBookingApi\obj\Debug\net10.0\ConferenceBookingApi.sourcelink.json
