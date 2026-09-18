@@ -1,3 +1,4 @@
+using ConferenceBookingApi.Data;
 using ConferenceBookingApi.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,13 +8,12 @@ namespace ConferenceBookingApi.Controllers;
 
 public class RoomsController : ControllerBase
 {
-    private static List<Room> _rooms = new List<Room>
+    private readonly AppDbContext _context;
+
+    public RoomsController(AppDbContext context)
     {
-        new Room { Id = 1, Name = "Зал А", Capacity = 50, BasePricePerHour = 2000 },
-        new Room { Id = 2, Name = "Зал В", Capacity = 100, BasePricePerHour = 3500 },
-        new Room { Id = 3, Name = "Зал С", Capacity = 30, BasePricePerHour = 1500 }
-    };
-    
+        _context = context;
+    }
     private static List<Service> _services = new List<Service>
     {
         new Service { Id = 1, Name = "Проєктор", Price = 500 },
@@ -21,91 +21,89 @@ public class RoomsController : ControllerBase
         new Service { Id = 3, Name = "Звук", Price = 700 }
     };
 
-    private static List<Booking> _bookings = new List<Booking>();
-
     [HttpGet]
     public IActionResult GetAllRooms()
     {
-        return Ok(_rooms);
+        var rooms = _context.Rooms.ToList();
+        return Ok(rooms);
     }
     
     [HttpPost]
-    public IActionResult CreateRoom(Room newRoom)
+    public IActionResult CreateRoom(Room room)
     {
-        int newId = _rooms.Any() ? _rooms.Max(r => r.Id) + 1 : 1;
-        newRoom.Id = newId;
-        
-        _rooms.Add(newRoom);
-        
-        return Ok(new { Message = "Зал успішно створено", RoomId = newId });
+        _context.Rooms.Add(room);
+        _context.SaveChanges(); // Зберігаємо зміни у файл
+        return CreatedAtAction(nameof(GetAllRooms), new { id = room.Id }, room);
     }
     
     [HttpPut("{id}")]
     public IActionResult UpdateRoom(int id, Room updatedRoom)
     {
-
-        var existingRoom = _rooms.FirstOrDefault(r => r.Id == id);
-        
-        if (existingRoom == null)
-        {
-            return NotFound(new { Message = "Зал з таким ID не знайдено" });
-        }
+        var existingRoom = _context.Rooms.FirstOrDefault(r => r.Id == id);
+        if (existingRoom == null) return NotFound(new { Message = "Зал не знайдено" });
         
         existingRoom.Name = updatedRoom.Name;
         existingRoom.Capacity = updatedRoom.Capacity;
         existingRoom.BasePricePerHour = updatedRoom.BasePricePerHour;
 
-        return Ok(new { Message = "Інформацію про зал успішно оновлено" });
+        _context.SaveChanges();
+        return Ok(existingRoom);
     }
 
     [HttpDelete("{id}")]
     public IActionResult DeleteRoom(int id)
     {
-        var existingRoom = _rooms.FirstOrDefault(r => r.Id == id);
-        if (existingRoom == null)
-        {
-            return NotFound(new { Message = "Зал з таким ID не знайдено" });
-        }
-        
-        _rooms.Remove(existingRoom);
-        return Ok(new {Message = "Зал успішно видалено"});
+        var existingRoom = _context.Rooms.FirstOrDefault(r => r.Id == id);
+        if (existingRoom == null) return NotFound(new { Message = "Зал не знайдено" });
+
+        _context.Rooms.Remove(existingRoom);
+        _context.SaveChanges();
+        return Ok(new { Message = "Зал успішно видалено" });
+    }
+    
+    [HttpGet("bookings")]
+    public IActionResult GetAllBookings()
+    {
+        var bookings = _context.Bookings.ToList();
+        return Ok(bookings);
     }
     
     [HttpGet("available")]
-    public IActionResult GetAvailableRooms(DateTime  startDate, int durationInHours, int expectedCapacity)
+    public IActionResult GetAvailableRooms(DateTime startDate, int durationInHours, int expectedCapacity)
     {
         var endDate = startDate.AddHours(durationInHours);
 
-        var availableRooms = _rooms
+        var availableRooms = _context.Rooms
             .Where(r => r.Capacity >= expectedCapacity)
-            .Where(r => !_bookings.Any(b => 
-                    b.RoomId == r.Id &&
-                    b.StartDate < endDate &&
-                    b.StartDate.AddHours(b.DurationInHours) > startDate
+            .Where(r => !_context.Bookings.Any(b => 
+                b.RoomId == r.Id && 
+                b.StartDate < endDate && 
+                b.StartDate.AddHours(b.DurationInHours) > startDate
             ))
             .ToList();
+
         return Ok(availableRooms);
     }
     
     [HttpPost("book")]
     public IActionResult BookRoom(BookingRequest request)
     {
-        var room = _rooms.FirstOrDefault(r => r.Id == request.RoomId);
+        var room = _context.Rooms.FirstOrDefault(r => r.Id == request.RoomId);
         if (room == null) return NotFound(new { Message = "Зал не знайдено" });
-        
+
         var requestEndDate = request.StartDate.AddHours(request.DurationInHours);
-        
-        bool isOccupied = _bookings.Any(b => 
-                b.RoomId == request.RoomId &&
-                b.StartDate < requestEndDate &&
-                b.StartDate.AddHours(b.DurationInHours) > request.StartDate
+
+        bool isOccupied = _context.Bookings.Any(b => 
+            b.RoomId == request.RoomId &&
+            b.StartDate < requestEndDate &&
+            b.StartDate.AddHours(b.DurationInHours) > request.StartDate
         );
 
         if (isOccupied)
         {
             return Conflict(new { Message = "Цей зал вже заброньовано на обраний час" });
         }
-        
+
         decimal totalPrice = 0;
         DateTime currentHour = request.StartDate;
 
@@ -114,27 +112,14 @@ public class RoomsController : ControllerBase
             int hour = currentHour.Hour;
             decimal priceForThisHour = room.BasePricePerHour;
 
-            if (hour >= 6 && hour < 9)
-            {
-                priceForThisHour = room.BasePricePerHour * 0.9m;
-            }
-            else if (hour >= 12 && hour < 14)
-            {
-                priceForThisHour = room.BasePricePerHour * 1.15m;
-            }
-            else if (hour >= 18 && hour < 23)
-            {
-                priceForThisHour = room.BasePricePerHour * 0.8m;
-            }
-            else
-            {
-                priceForThisHour = room.BasePricePerHour;
-            }
-
+            if (hour >= 6 && hour < 9) { priceForThisHour = room.BasePricePerHour * 0.9m; }
+            else if (hour >= 12 && hour < 14) { priceForThisHour = room.BasePricePerHour * 1.15m; }
+            else if (hour >= 18 && hour < 23) { priceForThisHour = room.BasePricePerHour * 0.8m; }
+        
             totalPrice += priceForThisHour;
             currentHour = currentHour.AddHours(1);
         }
-        
+
         foreach (var serviceId in request.ServiceIds)
         {
             var service = _services.FirstOrDefault(s => s.Id == serviceId);
@@ -143,23 +128,19 @@ public class RoomsController : ControllerBase
                 totalPrice += service.Price;
             }
         }
-        
+
         var newBooking = new Booking
         {
-            Id = _bookings.Any() ? _bookings.Max(b => b.Id) + 1 : 1,
+            // Зверни увагу: Id тут більше немає, EF Core згенерує його сам!
             RoomId = room.Id,
             StartDate = request.StartDate,
             DurationInHours = request.DurationInHours,
             TotalPrice = totalPrice
         };
-        _bookings.Add(newBooking);
+
+        _context.Bookings.Add(newBooking);
+        _context.SaveChanges(); // Обов'язково зберігаємо в базу!
 
         return Ok(new { Message = "Бронювання успішне", TotalPrice = totalPrice, BookingId = newBooking.Id });
-    }
-
-    [HttpGet("bookings")]
-    public IActionResult GetAllBookings()
-    {
-        return Ok(_bookings);
     }
 }
