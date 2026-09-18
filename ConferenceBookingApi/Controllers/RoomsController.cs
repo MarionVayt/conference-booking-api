@@ -92,7 +92,20 @@ public class RoomsController : ControllerBase
     {
         var room = _rooms.FirstOrDefault(r => r.Id == request.RoomId);
         if (room == null) return NotFound(new { Message = "Зал не знайдено" });
+        
+        var requestEndDate = request.StartDate.AddHours(request.DurationInHours);
+        
+        bool isOccupied = _bookings.Any(b => 
+                b.RoomId == request.RoomId &&
+                b.StartDate < requestEndDate &&
+                b.StartDate.AddHours(b.DurationInHours) > request.StartDate
+        );
 
+        if (isOccupied)
+        {
+            return Conflict(new { Message = "Цей зал вже заброньовано на обраний час" });
+        }
+        
         decimal totalPrice = 0;
         DateTime currentHour = request.StartDate;
 
