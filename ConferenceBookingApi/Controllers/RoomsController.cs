@@ -143,4 +143,10 @@ public class RoomsController : ControllerBase
 
         return Ok(new { Message = "Бронювання успішне", TotalPrice = totalPrice, BookingId = newBooking.Id });
     }
+
+    [HttpGet("bookings")]
+    public IActionResult GetAllBookings()
+    {
+        return Ok(_bookings);
+    }
 }

@@ -1,9 +1,2 @@
-POST http://localhost:5136/api/Rooms/book
-Content-Type: application/json
-
-{
-  "roomId": 1,
-  "startDate": "2026-10-01T13:00:00",
-  "durationInHours": 2,
-  "serviceIds": [2]
-}
+GET http://localhost:5136/api/Rooms/bookings
+Accept: application/json
