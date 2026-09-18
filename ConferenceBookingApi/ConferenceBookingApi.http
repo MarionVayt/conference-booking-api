@@ -1,14 +1,9 @@
-### Отримати всі зали
-GET http://localhost:5136/api/Rooms
-Accept: application/json
-
-### Створити новий зал
-POST http://localhost:5136/api/Rooms
+POST http://localhost:5136/api/Rooms/book
 Content-Type: application/json
 
 {
-  "name": "Зал D",
-  "capacity": 40,
-  "basePricePerHour": 1000,
-  "services": []
+  "roomId": 1,
+  "startDate": "2026-10-01T13:00:00",
+  "durationInHours": 2,
+  "serviceIds": [2]
 }

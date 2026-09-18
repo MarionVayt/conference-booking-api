@@ -13,6 +13,15 @@ public class RoomsController : ControllerBase
         new Room { Id = 2, Name = "Зал В", Capacity = 100, BasePricePerHour = 3500 },
         new Room { Id = 3, Name = "Зал С", Capacity = 30, BasePricePerHour = 1500 }
     };
+    
+    private static List<Service> _services = new List<Service>
+    {
+        new Service { Id = 1, Name = "Проєктор", Price = 500 },
+        new Service { Id = 2, Name = "Wi-Fi", Price = 300 },
+        new Service { Id = 3, Name = "Звук", Price = 700 }
+    };
+
+    private static List<Booking> _bookings = new List<Booking>();
 
     [HttpGet]
     public IActionResult GetAllRooms()
@@ -60,5 +69,78 @@ public class RoomsController : ControllerBase
         
         _rooms.Remove(existingRoom);
         return Ok(new {Message = "Зал успішно видалено"});
+    }
+    
+    [HttpGet("available")]
+    public IActionResult GetAvailableRooms(DateTime  startDate, int durationInHours, int expectedCapacity)
+    {
+        var endDate = startDate.AddHours(durationInHours);
+
+        var availableRooms = _rooms
+            .Where(r => r.Capacity >= expectedCapacity)
+            .Where(r => !_bookings.Any(b => 
+                    b.RoomId == r.Id &&
+                    b.StartDate < endDate &&
+                    b.StartDate.AddHours(b.DurationInHours) > startDate
+            ))
+            .ToList();
+        return Ok(availableRooms);
+    }
+    
+    [HttpPost("book")]
+    public IActionResult BookRoom(BookingRequest request)
+    {
+        var room = _rooms.FirstOrDefault(r => r.Id == request.RoomId);
+        if (room == null) return NotFound(new { Message = "Зал не знайдено" });
+
+        decimal totalPrice = 0;
+        DateTime currentHour = request.StartDate;
+
+        for (int i = 0; i < request.DurationInHours; i++)
+        {
+            int hour = currentHour.Hour;
+            decimal priceForThisHour = room.BasePricePerHour;
+
+            if (hour >= 6 && hour < 9)
+            {
+                priceForThisHour = room.BasePricePerHour * 0.9m;
+            }
+            else if (hour >= 12 && hour < 14)
+            {
+                priceForThisHour = room.BasePricePerHour * 1.15m;
+            }
+            else if (hour >= 18 && hour < 23)
+            {
+                priceForThisHour = room.BasePricePerHour * 0.8m;
+            }
+            else
+            {
+                priceForThisHour = room.BasePricePerHour;
+            }
+
+            totalPrice += priceForThisHour;
+            currentHour = currentHour.AddHours(1);
+        }
+        
+        foreach (var serviceId in request.ServiceIds)
+        {
+            var service = _services.FirstOrDefault(s => s.Id == serviceId);
+            if (service != null)
+            {
+                totalPrice += service.Price;
+            }
+        }
+        
+        var newBooking = new Booking
+        {
+            Id = _bookings.Any() ? _bookings.Max(b => b.Id) + 1 : 1,
+            RoomId = room.Id,
+            StartDate = request.StartDate,
+            DurationInHours = request.DurationInHours,
+            TotalPrice = totalPrice
+        };
+        _bookings.Add(newBooking);
+
+        return Ok(new { Message = "Бронювання успішне", TotalPrice = totalPrice, BookingId = newBooking.Id });
     }
 }
