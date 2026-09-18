@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ConferenceBookingApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d2c48c57e2e7dcdd2e1272abbe4affeac0bc1fd9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+61ed96829f8f7a320d784d5336a49ac7a906b54a")]
 [assembly: System.Reflection.AssemblyProductAttribute("ConferenceBookingApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ConferenceBookingApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

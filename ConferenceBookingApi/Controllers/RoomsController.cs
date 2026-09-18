@@ -32,7 +32,7 @@ public class RoomsController : ControllerBase
     public IActionResult CreateRoom(Room room)
     {
         _context.Rooms.Add(room);
-        _context.SaveChanges(); // Зберігаємо зміни у файл
+        _context.SaveChanges();
         return CreatedAtAction(nameof(GetAllRooms), new { id = room.Id }, room);
     }
     
@@ -131,7 +131,6 @@ public class RoomsController : ControllerBase
 
         var newBooking = new Booking
         {
-            // Зверни увагу: Id тут більше немає, EF Core згенерує його сам!
             RoomId = room.Id,
             StartDate = request.StartDate,
             DurationInHours = request.DurationInHours,
@@ -139,7 +138,7 @@ public class RoomsController : ControllerBase
         };
 
         _context.Bookings.Add(newBooking);
-        _context.SaveChanges(); // Обов'язково зберігаємо в базу!
+        _context.SaveChanges();
 
         return Ok(new { Message = "Бронювання успішне", TotalPrice = totalPrice, BookingId = newBooking.Id });
     }
